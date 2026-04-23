@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeForge AI</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 1000px;
+      background: rgba(30, 41, 59, 0.96);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 {
+      font-size: 34px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    #chatBox {
+      height: 500px;
+      overflow-y: auto;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .message {
+      margin-bottom: 12px;
+      padding: 12px 15px;
+      border-radius: 12px;
+      max-width: 85%;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      background: #2563eb;
+      margin-left: auto;
+    }
+
+    .bot {
+      background: #334155;
+      margin-right: auto;
+    }
+
+    .thinking {
+      opacity: 0.8;
+      font-style: italic;
+    }
+
+    .time {
+      display: block;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    input {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      background: #22c55e;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #16a34a;
+    }
+
+    button:disabled {
+      background: #64748b;
+      cursor: not-allowed;
+    }
+
+    .samples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .samples button {
+      background: #3b82f6;
+    }
+
+    .samples button:hover {
+      background: #2563eb;
+    }
+
+    .status {
+      margin-top: 12px;
+      color: #93c5fd;
+      font-size: 14px;
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 28px;
+      }
+
+      #chatBox {
+        height: 430px;
+      }
+
+      .input-row {
+        flex-direction: column;
+      }
+
+      .message {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>SafeForge AI</h1>
+    <p class="subtitle">
+      AI-powered industrial safety assistant using real safety manual context.<br>
+      Ask about laser hazards, PPE, emergency response, safe handling, and operating precautions.
+    </p>
+
+    <div id="chatBox">
+      <div class="message bot">
+Hello! Ask me a safety question like:
+• What are laser hazards?
+• What PPE is required?
+• What should I do in a laser emergency?
+        <span class="time" id="initialTime"></span>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <input type="text" id="userInput" placeholder="Ask your safety question here..." />
+      <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+
+    <div class="samples">
+      <button onclick="fillSample('What are laser hazards?')">Laser Hazards</button>
+      <button onclick="fillSample('What PPE is required for laser work?')">PPE</button>
+      <button onclick="fillSample('What should I do in a laser emergency?')">Emergency</button>
+      <button onclick="fillSample('What safety precautions should be followed during laser operation?')">Precautions</button>
+    </div>
+
+    <div class="status" id="statusText">Ready</div>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin + "/chat";
+
+    const chatBox = document.getElementById("chatBox");
+    const userInput = document.getElementById("userInput");
+    const statusText = document.getElementById("statusText");
+    const sendBtn = document.getElementById("sendBtn");
+
+    document.getElementById("initialTime").textContent = getCurrentTime();
+
+    function getCurrentTime() {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function fillSample(text) {
+      userInput.value = text;
+      userInput.focus();
+    }
+
+    function addMessage(text, sender, extraClass = "") {
+      const msg = document.createElement("div");
+      msg.className = `message ${sender} ${extraClass}`.trim();
+      msg.textContent = text;
+
+      const time = document.createElement("span");
+      time.className = "time";
+      time.textContent = getCurrentTime();
+      msg.appendChild(time);
+
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return msg;
+    }
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      addMessage(message, "user");
+      userInput.value = "";
+      statusText.textContent = "Thinking...";
+      sendBtn.disabled = true;
+      userInput.disabled = true;
+
+      const thinkingMsg = addMessage("Thinking...", "bot", "thinking");
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        thinkingMsg.remove();
+
+        if (!response.ok) {
+          addMessage(data.reply || "Backend returned an error.", "bot");
+          statusText.textContent = "Backend error";
+          return;
+        }
+
+        addMessage(data.reply || "No response received.", "bot");
+        statusText.textContent = "Ready";
+      } catch (error) {
+        thinkingMsg.remove();
+        addMessage("Cannot reach backend server. Check API connection.", "bot");
+        statusText.textContent = "Connection failed";
+        console.error(error);
+      } finally {
+        sendBtn.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
+      }
+    }
+
+    userInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
